@@ -12,7 +12,7 @@ df = pd.read_csv('./data/bitstamp.csv')
 df = df.sort_values('Timestamp')
 df.dropna(inplace=True)
 
-slice_point = int(len(df) - 50000)
+slice_point =100 # int(len(df) - 990000)
 
 train_df = df[:slice_point]
 test_df = df[slice_point:]
@@ -39,9 +39,10 @@ def callrender(locals_, globals_):
     """If we want to implement metrics in the environment, and call metrics in the main program, The only way is to call render in a metrics mode """
     locals_["self"].env.render(mode='metrics')
 
+
 model.learn(total_timesteps=slice_point, callback=callrender)
 
-train_env.render(mode="to_csv")
+train_env.render(mode='save_metrics')
 train_env.close()
 
 test=True
@@ -55,7 +56,9 @@ if test:
         action, _states = model.predict(obs)
         obs, rewards, done, info = test_env.step(action)
         test_env.render(mode="system", title="BTC")
-        #test_env.render(mode="human", title="BTC")	
-        test_env.close()
-
+    
+    test_env.close()
+    
+    test_env.render(mode='save_epoche_data')
+	
 
