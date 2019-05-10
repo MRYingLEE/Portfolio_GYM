@@ -7,16 +7,13 @@ import datetime as dt
 from gym import spaces
 from sklearn import preprocessing
 
-from render.BitcoinTradingGraph import BitcoinTradingGraph
-
-MAX_TRADING_SESSION = 100000
+MAX_TRADING_SESSION = 1000
 
 
 class BitcoinTradingEnv(gym.Env):
     """A Bitcoin trading environment for OpenAI gym"""
-    metadata = {'render.modes': ['human', 'system', 'none','metrics', 'to_csv']} # I added a metrics mode
+    metadata = {'render.modes': ['human', 'system', 'none','metrics', 'save_metrics','save_epoche_data']} # I added a metrics mode
     scaler = preprocessing.MinMaxScaler()
-    viewer = None
 
     def __init__(self, df, lookback_window_size=40, initial_balance=10000, commission=0.00075, serial=False):
         super(BitcoinTradingEnv, self).__init__()
@@ -167,27 +164,30 @@ class BitcoinTradingEnv(gym.Env):
                 'Sold: ' + str(self.account_history[4][self.current_step + self.frame_start]))
             print('Net worth: ' + str(self.net_worth))
 
-        elif mode == 'human':
-            if self.viewer is None:
-                self.viewer = BitcoinTradingGraph(
-                    self.df, kwargs.get('title', None))
-
-            self.viewer.render(self.frame_start + self.current_step,
-                               self.net_worth,
-                               self.trades,
-                               window_size=self.lookback_window_size)
         elif mode == 'metrics':
-            self.net_worth_list=np.append(self.net_worth_list,[self.net_worth],axis=0)
+            #self.save_metrics()
             print('Net worth: ' + str(self.net_worth))
-
+        elif mode == 'save_metrics':
+            self.save_metrics()
+            
         elif mode == 'to_csv':
-            pd.DataFrame(self.trades).to_csv("trades_"+str(dt.datetime.now())+".csv")
-            pd.DataFrame({"net_worth_list":self.net_worth_list}).to_csv("net_worth_list.csv")
+            self.save_epoche_data()
+
+    def clear_metrics(self):
+        self.net_worth_list=[]
+
+    def save_metrics(self):
+        self.net_worth_list=np.append(self.net_worth_list,[self.net_worth],axis=0)
+        pd.DataFrame({"net_worth_list":self.net_worth_list}).to_csv("./metrics/net_worth_list.csv")
+
+    def clear_epoche_data(self):
+        self.trades = []
+
+    def save_epoche_data(self):
+        pd.DataFrame(self.trades).to_csv("./metrics/trades_"+str(dt.datetime.now())+".csv")
  
     def close(self):
         print("close")
-        if self.viewer is not None:
-            self.viewer.close()
-            self.viewer = None
+
 
 
