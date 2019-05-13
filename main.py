@@ -8,11 +8,14 @@ from env.BitcoinTradingEnv import BitcoinTradingEnv
 
 import pandas as pd
 
-df = pd.read_csv('./data/bitstamp.csv')
+import pyfolio
+import empyrical
+
+df = pd.read_csv('.\\data\\bitstamp.csv')
 df = df.sort_values('Timestamp')
 df.dropna(inplace=True)
 
-slice_point =100 # int(len(df) - 990000)
+slice_point =100000 # int(len(df) - 990000)
 
 train_df = df[:slice_point]
 test_df = df[slice_point:]
@@ -40,7 +43,7 @@ def callrender(locals_, globals_):
     locals_["self"].env.render(mode='metrics')
 
 
-model.learn(total_timesteps=slice_point, callback=callrender)
+model.learn(total_timesteps=slice_point) #, callback=callrender)
 
 train_env.render(mode='save_metrics')
 train_env.close()
@@ -60,5 +63,6 @@ if test:
     test_env.close()
     
     test_env.render(mode='save_epoche_data')
-	
+
+    #test_env.render("")
 
