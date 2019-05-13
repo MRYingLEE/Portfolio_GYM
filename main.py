@@ -43,7 +43,7 @@ def callrender(locals_, globals_):
     locals_["self"].env.render(mode='metrics')
 
 
-model.learn(total_timesteps=slice_point) #, callback=callrender)
+model.learn(total_timesteps=slice_point, callback=callrender)
 
 train_env.render(mode='save_metrics')
 train_env.close()
