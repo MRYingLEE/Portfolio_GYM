@@ -5,7 +5,7 @@ So that this gym totally compatible to OPENAI gym (https://github.com/openai/gym
 
 # Not just another gym for investing
 
-I tried a lot of gym. They are only a general gym equiped with investment data (as STATE of RL environment).
+I tried a lot of gym. They are only a general gym equiped with investment data.
 
 For investing, the basic function is the performance and risk metrics. Without that it's hard to know wheather the algo is good or not. 
 
@@ -13,7 +13,7 @@ Also, in most situations, the profit is not the target objectives. Usually, the 
 
 So we need performance and risk metrics built in, not only as STATE, but also as REWARD of RL environment.
 
-The action/reward space parts are modified from Bitcoin-Trader-RL (https://github.com/notadamking/Bitcoin-Trader-RL).
+The action/reward space parts are modified from Bitcoin-Trader-RL (https://github.com/notadamking/Bitcoin-Trader-RL). Also, I use the same demo data.
 
 # In future
 
