@@ -13,6 +13,8 @@ Also, in most situations, the profit is not the target objectives. Usually, the 
 
 So we need performance and risk metrics built in, not only as STATE, but also as REWARD of RL environment.
 
+The action/reward space parts are modified from Bitcoin-Trader-RL (https://github.com/notadamking/Bitcoin-Trader-RL).
+
 # In future
 
 This is the first step to make an investing specific gym.
@@ -24,5 +26,5 @@ Besides Performance and Risk Metrics, We need more investing specific functions 
 
 # Credits
 1. OPENAI gym (https://github.com/openai/gym)
-2. Stock-Trading-Environment (https://github.com/notadamking/Stock-Trading-Environment)
-3. Pyfolio (https://github.com/quantopian/pyfolio)
+2. Bitcoin-Trader-RL (https://github.com/notadamking/Bitcoin-Trader-RL)
+3. quantopian/empyrical (https://github.com/quantopian/empyrical)
