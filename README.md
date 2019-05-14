@@ -15,6 +15,13 @@ So we need performance and risk metrics built in, not only as STATE, but also as
 
 The action/reward space parts are modified from Bitcoin-Trader-RL (https://github.com/notadamking/Bitcoin-Trader-RL). Also, I use the same demo data.
 
+One time training has 63525 epoches (40 steps per epoche) and get the following risk metrics:
+![Median](https://github.com/MRYingLEE/Portfolio_GYM/blob/master/median.png "Median")
+
+As we can see, the agent didn't learn from the training. And there is no obvious trend. The oscillation of the metrics could happen due to the agent is trying all kinds of possibility in act space.
+
+So, the metrics show more on the agent performance.
+
 # In future
 
 This is the first step to make an investing specific gym.
