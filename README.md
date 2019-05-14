@@ -13,7 +13,7 @@ Also, in most situations, the profit is not the target objectives. Usually, the 
 
 So we need performance and risk metrics built in, not only as STATE, but also as REWARD of RL environment.
 
-The action/reward space parts are modified from Bitcoin-Trader-RL (https://github.com/notadamking/Bitcoin-Trader-RL). Also, I use the same demo data.
+The action/reward space parts are modified from Bitcoin-Trader-RL (https://github.com/notadamking/Bitcoin-Trader-RL). Also, I use the same demo data (https://www.kaggle.com/mczielinski/bitcoin-historical-data).
 
 One time training has 63525 epoches (40 steps per epoche) and get the following risk metrics:
 ![Median](https://github.com/MRYingLEE/Portfolio_GYM/blob/master/median.png "Median")
