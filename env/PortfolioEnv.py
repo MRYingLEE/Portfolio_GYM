@@ -9,8 +9,8 @@ from sklearn import preprocessing
 
 import pyfolio
 
-from pyfolio import plotting
-from pyfolio import  perf_attrib
+#from pyfolio import plotting
+#from pyfolio import  perf_attrib
 import math
 import empyrical as ep
 
@@ -26,11 +26,11 @@ from pyfolio.tears import (create_full_tear_sheet,
 
 class PortfolioEnv(gym.Env):
     """A trading environment with porfolio function for OpenAI gym"""
-    metadata = {'render.modes': ['human', 'system', 'none','metrics', 'save_metrics','save_epoche_data']} # I added a metrics mode
+    metadata = {'render.modes': ['human', 'system', 'none','metrics', 'show_metrics','save_all_metrics']} # I added a metrics mode
     scaler = preprocessing.MinMaxScaler() # Todo: replace this for it looks ahead
 
     def __init__(self, 
-                    df, # The origial PRICE dataframe
+                    df_price, # The origial PRICE dataframe
                     lookback_window_size=40, # The lookback window size. The history to use to make decision
                     initial_balance=10000, # The initial balance
                     commission=0.00075, # The commission rate
@@ -38,7 +38,9 @@ class PortfolioEnv(gym.Env):
                  ):
         super(PortfolioEnv, self).__init__()
 
-        self.df = df.dropna().reset_index()   #Todo: the dataframe should be preprocessed in advance  
+        self.state_values=df_price.pct_change().to_numpy()[2:,:]
+        self.df_price = df_price.iloc[2:,:]   #Todo: the dataframe should be preprocessed in advance
+
         self.lookback_window_size = lookback_window_size
         self.initial_balance = initial_balance
         self.commission = commission
@@ -50,9 +52,9 @@ class PortfolioEnv(gym.Env):
 
         # Observes the OHCLV values, net worth, and trade history
         self.observation_space = spaces.Box(
-            low=0, high=1, shape=(10, lookback_window_size + 1), dtype=np.float16)
+            low=0, high=1, shape=(4, lookback_window_size + 1), dtype=np.float16)
 
-        self.metrics_history=[]
+        self.metrics_history=[] # Todo: we need to make array of dictionary 
 
         self._reset_portfolio()
 
@@ -60,19 +62,8 @@ class PortfolioEnv(gym.Env):
         """Get the next observation on the market"""
         end = self.current_step + self.lookback_window_size + 1
 
-        obs = np.array([
-            self.active_df['Open'].values[self.current_step:end],
-            self.active_df['High'].values[self.current_step:end],
-            self.active_df['Low'].values[self.current_step:end],
-            self.active_df['Close'].values[self.current_step:end],
-            self.active_df['Volume_(BTC)'].values[self.current_step:end],
-        ])
-
-        scaled_history = self.scaler.fit_transform(self.account_history)
-
-        obs = np.append(
-            obs, scaled_history[:, -(self.lookback_window_size + 1):], axis=0)
-
+        obs =  np.transpose(self.state_values[self.current_step:end])
+       
         return obs
 
     def _reset_session(self):
@@ -81,14 +72,14 @@ class PortfolioEnv(gym.Env):
 
         self.steps_left = self.epoche_size
         self.frame_start = np.random.randint(
-                self.lookback_window_size, len(self.df) - self.steps_left)
+                self.lookback_window_size+1, len(self.df_price) - self.steps_left)
 
-        self.active_df = self.df[self.frame_start - self.lookback_window_size:
+        self.active_df = self.df_price[self.frame_start - self.lookback_window_size:
                                  self.frame_start + self.steps_left]
 
         self.active_df = self.scaler.fit_transform(self.active_df)
         self.active_df = pd.DataFrame(
-            self.active_df, columns=self.df.columns)
+            self.active_df, columns=self.df_price.columns)
     
     def _reset_portfolio(self):
         """Reset the portfolio for the epoche"""
@@ -122,7 +113,7 @@ class PortfolioEnv(gym.Env):
         return self._next_observation()
 
     def _get_current_price(self):
-        return self.df['Close'].values[self.frame_start + self.current_step]
+        return self.df_price['Close'].values[self.frame_start + self.current_step]
 
     def _take_action(self, action, current_price):
         action_type = action[0]
@@ -172,26 +163,26 @@ class PortfolioEnv(gym.Env):
 
         self._take_action(action, current_price)
 
+        obs = self._next_observation()
+        reward = self.net_worth - self.previous_net_worth # I substracted previous value
+
         self.steps_left -= 1
         self.current_step += 1
 
-        if self.steps_left == 0:
-            self.balance += self.btc_held * current_price
-            self.btc_held = 0
-
-            self._reset_session()
-
-        obs = self._next_observation()
-        reward = self.net_worth - self.previous_net_worth # I substracted previous value
-        #Todo: To make reward use metrics
-
-        self.done = (self.net_worth <= 0) | (self.current_step>=self.epoche_size)
-
+        self.done = (self.net_worth <= 0) | (self.steps_left==0)
         if self.done:
             # Todo 1. To save the epoche metrics to the environmnt -- System level
             # Todo 2. To call user function to save the epoche data 
             #self.save_epoche_data()
             self.save_epoche_metrics()
+
+        #if self.steps_left == 0:
+        #    self.balance += self.btc_held * current_price
+        #    self.btc_held = 0
+
+        #    self._reset_session()
+
+        #Todo: To make reward use metrics
             
         return obs, reward, self.done, {}
 
@@ -199,9 +190,9 @@ class PortfolioEnv(gym.Env):
         if mode == 'system':
             print('Price: ' + str(self._get_current_price()))
             print(
-                'Bought: ' + str(self.account_history[2][self.current_step + self.frame_start]))
+                'Bought: ' + str(self.account_history[2][self.current_step ]))
             print(
-                'Sold: ' + str(self.account_history[4][self.current_step + self.frame_start]))
+                'Sold: ' + str(self.account_history[4][self.current_step ]))
             print('Net worth: ' + str(self.net_worth))
 
         elif mode == 'metrics':
@@ -212,6 +203,8 @@ class PortfolioEnv(gym.Env):
 
         elif mode == 'show_metrics':
             self.show_epoche_metrics()
+        elif mode == 'save_all_metrics':
+            self.save_all_metrics()
             
 
     def clear_metrics(self):# To use pyfolio
@@ -221,11 +214,12 @@ class PortfolioEnv(gym.Env):
         print('Net worth: ' + str(self.net_worth)) # for debug
         metrics=self.get_metrics()
 
-        self.metrics_history= np.append(self.metrics_history, metrics)
+        self.metrics_history.append(metrics)
 
     def save_all_metrics(self):
-        pd.DataFrame(self.metrics_history).to_csv(".\\metrics\\metrics_"+str(dt.datetime.now())+".csv")
-        
+        df=pd.DataFrame.from_dict(self.metrics_history, orient='columns')
+        df.to_csv(".\\metrics\\all_metrics.csv")
+
     def save_epoche_trades(self):
         pd.DataFrame(self.trades).to_csv(".\\metrics\\trades_"+str(dt.datetime.now())+".csv")
         #print("save_epoche_data"+str(dt.datetime.now()))
@@ -238,7 +232,7 @@ class PortfolioEnv(gym.Env):
         #print(self.get_metrics())
  
     def close(self):
-        self.save_all_metrics() #Todo To save all metrics of epoches
+        #self.save_all_metrics() #Todo To save all metrics of epoches
         print("close")
 
     def get_metrics(self):
@@ -275,11 +269,12 @@ class PortfolioEnv(gym.Env):
     'alpha': 'Alpha',
     'beta': 'Beta',
 }
+        if self.net_worth==10000.0:
+            print('Why?')
 
-        stats = pd.Series()
+        stats = {} # pd.Series()
         for stat_func in SIMPLE_STAT_FUNCS:
-            stats[STAT_FUNC_NAMES[stat_func.__name__]] = stat_func(self.returns)
+            #stats[STAT_FUNC_NAMES[stat_func.__name__]] = stat_func(self.returns)
+            stats[stat_func.__name__] = stat_func(self.returns)
 
         return stats
-
-
